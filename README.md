@@ -1,4 +1,4 @@
-# symfony_CICDCD
+# my-bank-backend
 
 ## Deploy localy
 Install the dependances
@@ -34,7 +34,7 @@ Change the connection string in the .env line 27 with the container name of mysq
 Build the image and deploy as container
 ```
 docker build . -t my-bank-backend
-docker run --name my-bank-backend_container --network symfony-network -p 8089:80 my-bank-backend
+docker run --name my-bank-backend_container --network symfony-network -p 8085:80 my-bank-backend
 ```
 
 Create database in mysql container and make the migration
@@ -54,8 +54,8 @@ Then build and start an instance of a jenkins_agent
 If your are on Windows, execute this command in Powershell or cmd
 ```
 cd Jenkins-agent
-docker build -t jenkins-agent-with-docker-and-composer .
-docker run --init --name jenkins_agent_composer -v /var/run/docker.sock:/var/run/docker.sock jenkins-agent-with-docker-and-composer -url http://172.17.0.2:8080 c61658121264adf05f1571ecca888342ab74bfad780f6143b6012de8a15d2d19 symfony_CICDCD
+docker build -t jenkins-agent-with-docker-and-composer-my-bank-backend .
+docker run --init --name jenkins_agent_composer -v /var/run/docker.sock:/var/run/docker.sock jenkins-agent-with-docker-and-composer-my-bank-backend -url http://172.17.0.2:8080 76cb5e741f24cd78a082be906f29e0f12d125e4f3667bbc2c0dbc6ed8d077968 my-bank-backend
 ```
 
 Want to try the entire CICD on your own repository and registry ?
