@@ -1,7 +1,5 @@
 <?php
 
-// src/Controller/CategoryController.php
-
 namespace App\Controller;
 
 use App\Entity\Category;
@@ -9,80 +7,72 @@ use App\Repository\CategoryRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
 
+#[Route('/api/categories')]
 class CategoryController extends AbstractController
 {
-    private $entityManager;
+    private EntityManagerInterface $em;
+    private CategoryRepository $categoryRepo;
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function __construct(EntityManagerInterface $em, CategoryRepository $categoryRepo)
     {
-        $this->entityManager = $entityManager;
+        $this->em = $em;
+        $this->categoryRepo = $categoryRepo;
     }
 
-    /**
-     * @Route("/api/categories", name="category_index", methods={"GET"})
-     */
-    public function index(CategoryRepository $categoryRepository): Response
+    #[Route('/', name: 'category_list', methods: ['GET'])]
+    public function list(): JsonResponse
     {
-        $categories = $categoryRepository->findAll();
+        $categories = $this->categoryRepo->findAll();
+        $data = [];
 
-        return $this->json($categories);
+        foreach ($categories as $category) {
+            $data[] = [
+                'id' => $category->getId(),
+                'title' => $category->getTitle(),
+                'description' => $category->getDescription(),
+            ];
+        }
+
+        return $this->json($data, 200);
     }
 
-    /**
-     * @Route("/api/category", name="category_create", methods={"POST"})
-     */
-    public function create(Request $request): Response
+    #[Route('/', name: 'category_create', methods: ['POST'])]
+    public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        // Create a new Category
+        if (empty($data['title']) || empty($data['description'])) {
+            return $this->json(['error' => 'Champs requis manquants'], 400);
+        }
+
         $category = new Category();
         $category->setTitle($data['title']);
         $category->setDescription($data['description']);
 
-        // Persist Category entity
-        $this->entityManager->persist($category);
-        $this->entityManager->flush();
+        $this->em->persist($category);
+        $this->em->flush();
 
-        return $this->json(['message' => 'Category created successfully!'], Response::HTTP_CREATED);
+        return $this->json(['message' => 'Catégorie créée', 'categoryId' => $category->getId()], 201);
     }
 
-    /**
-     * @Route("/api/category/{id}", name="category_show", methods={"GET"})
-     */
-    public function show(Category $category): Response
+    #[Route('/{id}', name: 'category_show', methods: ['GET'])]
+    public function show(int $id): JsonResponse
     {
-        return $this->json($category);
-    }
+        $category = $this->categoryRepo->find($id);
 
-    /**
-     * @Route("/api/category/{id}", name="category_update", methods={"PUT"})
-     */
-    public function update(Request $request, Category $category): Response
-    {
-        $data = json_decode($request->getContent(), true);
+        if (!$category) {
+            return $this->json(['error' => 'Catégorie non trouvée'], 404);
+        }
 
-        $category->setTitle($data['title']);
-        $category->setDescription($data['description']);
+        $data = [
+            'id' => $category->getId(),
+            'title' => $category->getTitle(),
+            'description' => $category->getDescription(),
+        ];
 
-        // Update Category entity
-        $this->entityManager->flush();
-
-        return $this->json(['message' => 'Category updated successfully!']);
-    }
-
-    /**
-     * @Route("/api/category/{id}", name="category_delete", methods={"DELETE"})
-     */
-    public function delete(Category $category): Response
-    {
-        // Remove Category entity
-        $this->entityManager->remove($category);
-        $this->entityManager->flush();
-
-        return $this->json(['message' => 'Category deleted successfully!']);
+        return $this->json($data, 200);
     }
 }
